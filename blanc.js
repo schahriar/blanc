@@ -63,14 +63,15 @@ blanc.prototype.watch = function(directory) {
     herb.line('~').log('█ ' + gutil.colors.blue('blanc'), gutil.colors.white('running ...')).line('~');
 
     if (!directory) directory = process.cwd();
-    if (!fs.existsSync(path.resolve(directory, '.blanc')))
+
     this.config = JSON.parse(fs.readFileSync(path.resolve(directory, '.blanc'), 'utf8')) || this.config;
+    this.dest = path.resolve(directory, this.config.dest || '');
     this.directory = directory;
 
     portscanner.findAPortNotInUse(8080, 9000, '127.0.0.1', function(error, port) {
         if (error) throw error;
         connect.server({
-            root: [self.config.dest],
+            root: [self.dest || ''],
             livereload: true,
             port: port
         });
@@ -99,27 +100,29 @@ blanc.prototype.reload = function() {
 }
 
 blanc.prototype.jadify = function() {
+    var self = this;
     gulp.src(resolve(['./source/*/*.jade', './source/*.jade', '!./source/layout.jade'], this.directory))
         .pipe(jade({
             locals: {}
         }))
-        .pipe(gulp.dest(this.config.dest))
+        .pipe(gulp.dest(self.dest))
         .pipe(connect.reload());
 
     gutil.log(gutil.colors.green('Jade render'), gutil.colors.magenta('complete'));
 }
 
 blanc.prototype.lessify = function() {
-    gulp.src(resolve(['./stylesheets/*.less'], this.directory))
+    var self = this;
+    gulp.src(resolve(['./stylesheets/*.less'], self.directory))
         .pipe(less({
-            paths: [path.join(this.directory, 'stylesheets', 'includes')]
+            paths: [path.join(self.directory, 'stylesheets', 'includes')]
         }))
         .on('error', gutil.log.bind(gutil, 'Less Error'))
         .pipe(autoprefixer({
             browsers: ['last 5 version'],
             cascade: true
         }))
-        .pipe(gulp.dest(path.resolve(this.config.dest, 'css')))
+        .pipe(gulp.dest(path.resolve(self.dest, 'css')))
         .pipe(connect.reload());
 
     gutil.log(gutil.colors.cyan('Less render'), gutil.colors.magenta('complete'));
@@ -127,10 +130,13 @@ blanc.prototype.lessify = function() {
 
 blanc.prototype.resourcify = function() {
     var self = this;
-    fs.remove(path.resolve(self.config.dest, 'resources'), function(error){
+
+    // Ignore if dest is in root
+    if(self.config.dest == './') return false;
+    fs.remove(path.resolve(self.dest, 'resources'), function(error){
         if(error) throw error;
         gulp.src(resolve(['./resources/*', './resources/*/*'], self.directory), { base: './' })
-            .pipe(gulp.dest(self.config.dest))
+            .pipe(gulp.dest(self.dest))
             .pipe(connect.reload());
         gutil.log(gutil.colors.red('Resource compile'), gutil.colors.magenta('complete'));
     })
