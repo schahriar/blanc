@@ -1,0 +1,44 @@
+{
+  "name": "blanc",
+  "version": "0.1.1",
+  "description": "a zero config static website generator",
+  "main": "blanc.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "preferGlobal": true,
+  "bin": {
+    "blanc": "bin/startup",
+    "Blanc": "bin/startup"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/schahriar/blanc.git"
+  },
+  "keywords": [
+    "static",
+    "website",
+    "generator",
+    "blanc"
+  ],
+  "author": "Schahriar SaffarShargh",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/schahriar/blanc/issues"
+  },
+  "homepage": "https://github.com/schahriar/blanc",
+  "dependencies": {
+    "fs-extra": "^0.18.2",
+    "gulp": "^3.8.11",
+    "gulp-autoprefixer": "^2.3.0",
+    "gulp-connect": "^2.2.0",
+    "gulp-jade": "^1.0.0",
+    "gulp-less": "^3.0.3",
+    "gulp-util": "^3.0.4",
+    "herb": "^2.1.1",
+    "lodash": "^3.8.0",
+    "marked": "^0.3.3",
+    "portscanner": "^1.0.0",
+    "yargs": "^3.9.0"
+  }
+}
