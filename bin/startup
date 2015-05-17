@@ -7,7 +7,7 @@ process.title = 'blanc';
 var _ = require('lodash');
 var herb = require('herb');
 var argv = require('yargs').argv;
-var gutil = require('gulp-util');
+var herb = require('herb');
 
 var blanc = new (require('../blanc'));
 
@@ -21,6 +21,11 @@ var tasks = {
         description: "WATCHING|WATCHES| SITE",
         category: "development",
         FUNC: require("./tasks/watch")
+    },
+    fix: {
+        description: "FIXING|FIXES| BLANC CONFIG",
+        category: "development",
+        FUNC: require("./tasks/fix")
     },
 }
 
@@ -57,12 +62,12 @@ if (
 		herb.marker({ color: 'dim' }).line('- -');
 		herb.group(capitalizeFirstLetter(category));
 		_.each(tasks, function(task) {
-	        herb.log(pad(7-task.command.length, task.command, ' ').cyan, "\t", "->".blue, verbalize(task.get.description, false));
+	        herb.log(herb.cyan(pad(7-task.command.length, task.command, ' ')), "\t", herb.blue("->"), verbalize(task.get.description, false));
 	    })
 		herb.groupEnd();
 	})
 
     //console.log("---------------------------------".gray);
 } else {
-    gutil.log(gutil.colors.yellow("COMMAND NOT FOUND"), gutil.colors.cyan("\r\nType"), gutil.colors.magenta('blanc help'), gutil.colors.cyan('for more info.'));
+    herb.log(herb.yellow("COMMAND NOT FOUND"), herb.cyan("\r\nType"), herb.magenta('blanc help'), herb.cyan('for more info.'));
 }

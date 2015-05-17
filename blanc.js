@@ -7,13 +7,9 @@ var path = require('path');
 
 //
 var gulp = require('gulp');
-var gutil = require('gulp-util');
-var jade = require('gulp-jade');
-var less = require('gulp-less');
 var connect = require('gulp-connect');
-var autoprefixer = require('gulp-autoprefixer');
-var portscanner = require('portscanner')
-    //
+var portscanner = require('portscanner');
+//
 
 var herb = require('herb');
 
@@ -21,6 +17,7 @@ var blanc = function(callback) {
     this.config = {
         dest: './'
     }
+    this.log = require('./superlog.js')('█ blanc');
     eventEmmiter.call(this);
 }
 
@@ -46,12 +43,12 @@ blanc.prototype.init = function(fullPath, dest) {
             return n.substring(0, 1) === '.'
         })
         if (files.length !== 0) {
-            gutil.log(gutil.colors.cyan("REMOVE"), gutil.colors.yellow(files.join(', ')))
-            gutil.log(gutil.colors.red("THIS DIRECTORY MUST BE EMPTY!"));
+            herb.log(herb.cyan("REMOVE"), herb.yellow(files.join(', ')))
+            herb.log(herb.red("THIS DIRECTORY MUST BE EMPTY!"));
         } else {
             fs.copy(template, fullPath, function(error) {
                 if (error) return console.error(error);
-                gutil.log(gutil.colors.yellow("SUCCESSFULLY INITIALIZED"));
+                herb.log(herb.yellow("SUCCESSFULLY INITIALIZED"));
             })
         }
     })
@@ -60,13 +57,24 @@ blanc.prototype.init = function(fullPath, dest) {
 blanc.prototype.watch = function(directory) {
     var self = this;
 
-    herb.line('~').log('█ ' + gutil.colors.blue('blanc'), gutil.colors.white('running ...')).line('~');
+    self.log.header('ready!');
 
     if (!directory) directory = process.cwd();
 
-    this.config = JSON.parse(fs.readFileSync(path.resolve(directory, '.blanc'), 'utf8')) || this.config;
-    this.dest = path.resolve(directory, this.config.dest || '');
-    this.directory = directory;
+    // Checks if .blanc file exists
+    if(!fs.existsSync(path.resolve(directory, '.blanc'))) {
+        this.log.error('.blanc');
+        return herb.error('.blanc file does not exists! Run', herb.magenta('blanc fix or blanc init'));
+    }
+
+    try {
+        this.config = JSON.parse(fs.readFileSync(path.resolve(directory, '.blanc'), 'utf8')) || this.config;
+        this.dest = path.resolve(directory, this.config.dest || '');
+        this.directory = directory;
+    }catch(e) {
+        this.log.error('.blanc');
+        return herb.error('.blanc file seems to be corrupted! Run', herb.magenta('blanc fix'));
+    }
 
     portscanner.findAPortNotInUse(8080, 9000, '127.0.0.1', function(error, port) {
         if (error) throw error;
@@ -77,82 +85,52 @@ blanc.prototype.watch = function(directory) {
         });
     })
 
-    this.autoBuild();
+    this.autoOverwatch();
 }
 
-blanc.prototype.overwatch = function(source, func) {
-    var self = this;
-
-    this[func]();
-    gulp.watch(resolve(source, self.directory), function(){
-        self[func].apply(self, arguments);
-    });
-}
-
-blanc.prototype.autoBuild = function() {
-    this.overwatch(['./source/*/*', './source/*.jade', './markdown/*/*.md', './markdown/*.md'], 'jadify');
+// Automatically overwatches default paths
+/// This function is separated from WATCH mainly for API purposes
+blanc.prototype.autoOverwatch = function() {
+    this.overwatch(['./source/*/*', './source/*', './markdown/*/*.md', './markdown/*.md'], 'jadify');
     this.overwatch(['./stylesheets/*.less', './stylesheets/*/*.less'], 'lessify');
     this.overwatch(['./resources/*', './resources/*/*'], 'resourcify');
 }
 
-blanc.prototype.reload = function() {
-    connect.reload();
-}
-
-blanc.prototype.jadify = function() {
-    var self = this;
-    gulp.src(resolve(['./source/*/*.jade', './source/*.jade', '!./source/layout.jade'], this.directory))
-        .pipe(jade({
-            locals: {}
-        }))
-        .pipe(gulp.dest(self.dest))
-        .pipe(connect.reload());
-
-    gutil.log(gutil.colors.green('Jade render'), gutil.colors.magenta('complete'));
-}
-
-blanc.prototype.lessify = function() {
-    var self = this;
-    gulp.src(resolve(['./stylesheets/*.less'], self.directory))
-        .pipe(less({
-            paths: [path.join(self.directory, 'stylesheets', 'includes')]
-        }))
-        .on('error', gutil.log.bind(gutil, 'Less Error'))
-        .pipe(autoprefixer({
-            browsers: ['last 5 version'],
-            cascade: true
-        }))
-        .pipe(gulp.dest(path.resolve(self.dest, 'css')))
-        .pipe(connect.reload());
-
-    gutil.log(gutil.colors.cyan('Less render'), gutil.colors.magenta('complete'));
-}
-
-blanc.prototype.resourcify = function() {
+/*
+// Resolves and Watches an Array of paths for changes
+// *func* is called on change
+*/
+blanc.prototype.overwatch = function(source, func) {
     var self = this;
 
-    // Ignore if dest is in root
-    if(self.config.dest == './') return false;
-    fs.remove(path.resolve(self.dest, 'resources'), function(error){
-        if(error) throw error;
-        gulp.src(resolve(['./resources/*', './resources/*/*'], self.directory), { base: './' })
-            .pipe(gulp.dest(self.dest))
-            .pipe(connect.reload());
-        gutil.log(gutil.colors.red('Resource compile'), gutil.colors.magenta('complete'));
-    })
+    this[func]();
+    gulp.watch(self.resolve(source), function(){
+        self[func].apply(self, arguments);
+    });
 }
 
-function resolve(paths, directory) {
+/*
+// Resolves an Array of paths to the project directory
+*/
+blanc.prototype.resolve = function(paths) {
     var paths = _.toArray(paths);
     var resolved = [];
     _.each(paths, function(PATH) {
         if (PATH.substring(0, 1) == '!') {
-            resolved.push('!' + path.resolve(directory || '', PATH.substring(1)));
+            resolved.push('!' + path.resolve(this.directory || '', PATH.substring(1)));
         } else {
-            resolved.push(path.resolve(directory || '', PATH));
+            resolved.push(path.resolve(this.directory || '', PATH));
         }
     })
     return resolved;
 }
+// Reloads development server (livereload)
+blanc.prototype.reload = connect.reload;
+
+//// MODULES ////
+blanc.prototype.jadify = require('./modules/jadify');
+blanc.prototype.lessify = require('./modules/lessify');
+blanc.prototype.resourcify = require('./modules/resourcify');
+//// ------ ////
 
 module.exports = blanc;
