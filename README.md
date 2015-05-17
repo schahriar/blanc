@@ -14,7 +14,8 @@ blanc init && blanc watch
 **blanc** will then start a development server at an available port between 8080 - 9000 and display the address in the console. This dev sever will have live-reload enabled by default!
 
 You should then have a rapid development server setup at **localhost:8080** (or a higher port if occupied)
-![](https://raw.githubusercontent.com/schahriar/blanc/master/e.g.png)
+
+![localhost](https://raw.githubusercontent.com/schahriar/blanc/master/e.g.png)
 
 ## Init Options
 ```jade
