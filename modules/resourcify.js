@@ -18,6 +18,6 @@ module.exports = function() {
             }))
             .pipe(gulp.dest(self.dest))
             .pipe(self.reload());
-        self.log.task('Resource compile', 'complete');
+        self.log.task('Resource', 'compile', 'complete');
     })
 }

@@ -32,5 +32,5 @@ module.exports = function() {
         .pipe(gulp.dest(self.dest))
         .pipe(self.reload());
 
-    self.log.task('Jade render', 'complete');
+    self.log.task('Jade', 'render', 'complete');
 }

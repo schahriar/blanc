@@ -2,12 +2,16 @@ var fs = require('fs-extra');
 var path = require('path');
 var herb = require('herb');
 
-var defaultBlancFile = {
-    dest: './'
+var makeConfig = function(destination, time, minutes){
+    return {
+        dest: destination || './',
+        createdAt: time || new Date(),
+        timeSpent: minutes || 0
+    }
 }
 
 function writeDefault(dir) {
-    fs.writeFile(path.resolve(dir, '.blanc'), JSON.stringify(defaultBlancFile, null, 2), function(error){
+    fs.writeFile(path.resolve(dir, '.blanc'), JSON.stringify(makeConfig(), null, 2), function(error){
         if(error) throw error;
         herb.log(herb.green('Successful!'))
         herb.log(herb.green('You may want to edit'), herb.bold('.blanc'), herb.green('file in the given directory in order to reset the dest attribute.'));
@@ -22,22 +26,22 @@ module.exports = function(blanc, argv) {
                 if(error) throw error;
                 try {
                     var config = JSON.parse(data);
-                    if(!config.dest) {
-                        herb.warn("Destination attribute does not exist");
-                        herb.log("Attempting file recreation");
+                    if(!config.dest || !config.createdAt) {
+                        herb.warn("Incorrect attributes!");
+                        herb.log("Attempting file recreation ...");
                         writeDefault(dir)
                     }else{
                         herb.log(herb.green("No issues found!"));
                     }
                 }catch(e) {
                     herb.error("JSON error");
-                    herb.log("Attempting to fix the issue");
+                    herb.log("Attempting to fix the issue ...");
                     writeDefault(dir);
                 }
             })
         }else{
             herb.warn(herb.bold('.blanc'),'file does not exist!');
-            herb.log('Creating one now!');
+            herb.log('Creating one now ...');
             writeDefault(dir);
         }
     })

@@ -1,5 +1,6 @@
 var eventEmmiter = require('events').EventEmitter;
 var util = require('util');
+var StringDecoder = require('string_decoder').StringDecoder;
 
 var _ = require('lodash')
 
@@ -7,25 +8,38 @@ var herb = require('herb');
 var culinary = require('culinary');
 var screen = culinary.size();
 
-function time() {
+var fs = require('fs');
+var path = require('path');
+var notifier = require('node-notifier');
+
+// Locals
+var notifierManager = {};
+var logArray = [];
+//
+
+function time(noPadding) {
     var now = new Date();
-    return (" [" + now.getHours() + ":" + ((now.getMinutes() < 10)?("0" + now.getMinutes()):now.getMinutes()) + ":" + ((now.getSeconds() < 10)?("0" + now.getSeconds()): now.getSeconds()) + "] ");
+    return (((!noPadding)?" [":"[") + now.getHours() + ":" + ((now.getMinutes() < 10) ? ("0" + now.getMinutes()) : now.getMinutes()) + ":" + ((now.getSeconds() < 10) ? ("0" + now.getSeconds()) : now.getSeconds()) + ((!noPadding)?"] ":"]"));
 }
 
-var SuperLog = function(name) {
-    this.name = name;
+var SuperLog = function(title, prefix, silent) {
+    this.title = title;
+    this.padding = { top: 3, bottom: 0 };
+    this.name = (prefix) ? prefix + ' ' + title : title;
+    this.hush = !!silent;
     this.templates = {
-        header: herb.template('log', 'blue', 'white', 'dim', 'magenta', 'bold'),
-        error: herb.template('error', 'yellow', 'dim', 'bgRed', 'red', 'bold')
+        header: herb.template('write', 'blue', 'white', 'dim', 'magenta', 'white', 'bold'),
+        error: herb.template('write', 'yellow', 'dim', 'bgRed', 'red', 'bold')
     }
     this.hasError = false;
     this.solve = function() {
-        for(i=4; i<=screen.height; i++){
+        for (i = 4; i <= screen.height; i++) {
             culinary.position(0, i).eraseLine()
         }
         culinary.position(0, 4);
         this.hasError = false;
     }
+
     eventEmmiter.call(this);
 }
 
@@ -34,45 +48,129 @@ util.inherits(SuperLog, eventEmmiter);
 SuperLog.prototype.header = function() {
     var text = _.toArray(arguments).join(' ');
     culinary.position(0, 0).clearScreen();
-    herb.marker({ style: 'dim' }).line('~');
+    herb.marker({
+        style: 'dim'
+    }).line('~');
     this.templates.header(this.name, '|', '[start]', text || ' ');
-    herb.marker({ style: 'dim' }).line('~');
+    herb.marker({
+        style: 'dim'
+    }).line('~');
     culinary.position(0, 4);
+
+    process.on('exit', function(){
+        culinary.clearScreen().position(0,0);
+    });
 }
 
-SuperLog.prototype.task = function(task, status) {
-    if(this.hasError) this.solve();
+SuperLog.prototype.task = function(plugin, task, status) {
+    if (this.hasError) this.solve();
 
     var type = {
         'Less': 'yellow',
         'Jade': 'magenta',
-        'Reso': 'cyan'
+        'Reso': 'cyan',
+        'Brow': 'blue'
     }
 
     culinary.save().position(0, 2).eraseLine();
-    this.templates.header(this.name, '|', time(), herb[type[task.substring(0,4)]](task), status);
+    try {
+        this.templates.header(this.name, '|', time(), herb[type[plugin.substring(0, 4)]](plugin), task, status);
+    } catch (e) {
+        culinary.write(this.name, '|', time(), plugin, task);
+    }
     culinary.restore();
+
+    this.addLog(herb.dim(time(true)), herb[type[plugin.substring(0, 4)]](plugin), task, status || '', 'done!');
+    this.notify('Task ' + plugin + ' ' + task + ' done!', plugin);
 }
 
 SuperLog.prototype.error = function(plugin, code) {
-    if(this.hasError) this.solve();
+    if (this.hasError) this.solve();
 
     culinary.save().position(0, 2).eraseLine();
     this.templates.error(this.name, '|', time(), 'ERROR: ' + plugin, code);
     culinary.restore();
+    this.notify('ERROR: ' + plugin + ' ' + code, 'ERROR')
 }
 
 SuperLog.prototype.plumb = function(message) {
     this.hasError = true;
-    culinary.position(0,4);
-    herb.marker({ color: 'dim' }).line('ERROR - ');
+    culinary.position(0, 4);
+    herb.marker({
+        color: 'dim'
+    }).line('ERROR - ');
     _.each(message.split('\n'), function(line, index) {
         culinary.position(1, index + 5).eraseLine();
-        herb.warn(line || ' ');
+        culinary.write(herb.yellow(line || ' ') + '\n');
     })
-    culinary.position(0,4);
+    culinary.position(0, 4);
 }
 
-module.exports = function(name) {
-    return new SuperLog(name);
+SuperLog.prototype.addLog = function() {
+    var startAt = 4;
+    var available = screen.height - (this.padding.bottom+startAt);
+    var type = {
+        'Less': 'yellow',
+        'Jade': 'magenta',
+        'Reso': 'cyan',
+        'Brow': 'blue'
+    }
+
+    if(logArray.length >= available) logArray.shift();
+    logArray.push(_.toArray(arguments).join(' '));
+
+    _.each(logArray, function(log, pos) {
+        culinary.position(0, pos + startAt).eraseLine();
+        // Process log
+        log = log.replace(require('ansi-regex')(), '');
+        // If time is prepended
+        if (/\[.*?\]/.exec(log)) {
+            _time = /\[.*?\]/.exec(log)[0];
+        }else{
+            _time = time(true) + ' ';
+            // Keeps a constant time
+            logArray[pos] = _time + log;
+        }
+        log = log.replace(/\[.*?\]/, '');
+        log = (type[log.substring(1,5)])?herb[type[log.substring(1,5)]](log):herb.bold(log);
+        log = herb.dim(_time) + log;
+        herb.write(log);
+    })
+}
+
+SuperLog.prototype.notify = function(message, type) {
+    if (this.hush) return false;
+    if (notifierManager[type] === true) return false;
+    notifier.notify({
+        title: (type === 'ERROR') ? this.title + ' ERROR' : this.title,
+        message: message,
+        icon: path.resolve(__dirname, this.title, '.png'),
+    })
+    notifierManager[type] = true;
+    setTimeout(function() {
+        notifierManager[type] = false;
+    }, (type === 'ERROR') ? 6000 : 3500);
+}
+
+SuperLog.prototype.silent = function(toggle) {
+    this.hush = toggle || true;
+}
+
+SuperLog.prototype.line = function() {
+    var args = _.toArray(arguments);
+    var line = args.shift();
+    if (line.substring(0, 4) === 'last') {
+        if(this.padding.bottom < 1) this.padding.bottom = 1;
+        if (line.substring(4, 5) === '-') {
+            this.padding.bottom = parseInt(line.split('-')[1]) + 1;
+            line = screen.height - parseInt(line.split('-')[1]);
+        } else line = screen.height + 1;
+    }
+    culinary.save().position(0, line).eraseLine();
+    culinary.write(args.join(' '));
+    culinary.restore();
+}
+
+module.exports = function(title, prefix, silent) {
+    return new SuperLog(title, prefix, silent);
 };

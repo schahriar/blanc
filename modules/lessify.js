@@ -23,5 +23,5 @@ module.exports = function() {
         .pipe(gulp.dest(path.resolve(self.dest, 'css')))
         .pipe(self.reload());
 
-    self.log.task('Less render', 'complete');
+    self.log.task('Less', 'render', 'complete');
 }

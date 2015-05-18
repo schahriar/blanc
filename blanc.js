@@ -15,9 +15,19 @@ var herb = require('herb');
 
 var blanc = function(callback) {
     this.config = {
-        dest: './'
+        dest: './',
+        createdAt: new Date(),
+        timeSpent: 0
     }
-    this.log = require('./superlog.js')('█ blanc');
+    this.port = 8080;
+    this.idle = 0;
+    this.log = require('./superlog.js')('blanc', '█');
+    this.setFooter = function(){
+        this.log.line('last-3', herb.dim('--------------------------'));
+        this.log.line('last-2', herb.cyan('Development Server:'), herb.bgRed(' http://localhost:' + this.port + ' '));
+        this.log.line('last-1', herb.cyan('Created on:'), new Date(Date.parse(this.config.createdAt)));
+        this.log.line('last', herb.cyan('Development Time:'), (this.config.timeSpent < 60)?this.config.timeSpent + ' minute(s)':Math.round(this.config.timeSpent/60)+' hour(s)');
+    }
     eventEmmiter.call(this);
 }
 
@@ -54,11 +64,17 @@ blanc.prototype.init = function(fullPath, dest) {
     })
 }
 
-blanc.prototype.watch = function(directory) {
+blanc.prototype.watch = function(directory, silent) {
     var self = this;
 
     self.log.header('ready!');
 
+    // Replace console log
+    console.log = console.warn = console.error = function() {
+        self.log.addLog.apply(self.log, arguments)
+    };
+
+    if (!!silent) self.log.silent();
     if (!directory) directory = process.cwd();
 
     // Checks if .blanc file exists
@@ -78,12 +94,28 @@ blanc.prototype.watch = function(directory) {
 
     portscanner.findAPortNotInUse(8080, 9000, '127.0.0.1', function(error, port) {
         if (error) throw error;
+        self.port = port;
+        // Update footer
+        self.setFooter();
         connect.server({
             root: [self.dest || ''],
             livereload: true,
             port: port
         });
     })
+
+    this.setFooter();
+    // Log time spent
+    setInterval(function(){
+        // Defines a minimum 5 min save time to stop the counter
+        if((parseInt(self.idle) === NaN) || (parseInt(self.idle) <= 5)) {
+            self.idle += 1;
+            self.config.timeSpent += 1;
+            self.setFooter();
+            // Ignore errors
+            fs.writeFile(path.resolve(self.directory, '.blanc'), JSON.stringify(self.config, null, 2), function(error) { });
+        }
+    }, 60000);
 
     this.autoOverwatch();
 }
@@ -94,6 +126,7 @@ blanc.prototype.autoOverwatch = function() {
     this.overwatch(['./source/*/*', './source/*', './markdown/*/*.md', './markdown/*.md'], 'jadify');
     this.overwatch(['./stylesheets/*.less', './stylesheets/*/*.less'], 'lessify');
     this.overwatch(['./resources/*', './resources/*/*'], 'resourcify');
+    this.overwatch(['./javascript/*.js', './javascript/*/*.js'], 'browserify');
 }
 
 /*
@@ -105,6 +138,7 @@ blanc.prototype.overwatch = function(source, func) {
 
     this[func]();
     gulp.watch(self.resolve(source), function(){
+        self.idle = 0;
         self[func].apply(self, arguments);
     });
 }
@@ -131,6 +165,7 @@ blanc.prototype.reload = connect.reload;
 blanc.prototype.jadify = require('./modules/jadify');
 blanc.prototype.lessify = require('./modules/lessify');
 blanc.prototype.resourcify = require('./modules/resourcify');
+blanc.prototype.browserify = require('./modules/browserify');
 //// ------ ////
 
 module.exports = blanc;
