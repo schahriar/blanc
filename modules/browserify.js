@@ -27,13 +27,14 @@ module.exports = function() {
                 self.log.plumb(error.message);
                 this.emit('end');
             }))
+            .pipe(self.event('browserify:start'))
             .pipe(source('./bundle.js'))
             .pipe(buffer())
             .pipe(sourcemaps.init({loadMaps: true}))
             .pipe(uglify())
             .pipe(sourcemaps.write('./'))
             .pipe(gulp.dest(path.resolve(self.dest, 'js')))
-            .pipe(self.reload());
+            .pipe(self.reload())
     }
 
     bundle.on('update', rebundle);
@@ -43,6 +44,7 @@ module.exports = function() {
         this.emit('end');
     })
     bundle.on('time', function(time) {
+        self.event('!browserify:done', time);
         self.log.task('Browserify', 'render took', time + 'ms');
     });
 

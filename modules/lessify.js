@@ -13,6 +13,7 @@ module.exports = function() {
             self.log.plumb(error.message);
             this.emit('end');
         }))
+        .pipe(self.event('less:start'))
         .pipe(less({
             paths: [path.join(self.directory, 'stylesheets', 'includes')]
         }))
@@ -21,7 +22,8 @@ module.exports = function() {
             cascade: true
         }))
         .pipe(gulp.dest(path.resolve(self.dest, 'css')))
-        .pipe(self.reload());
+        .pipe(self.reload())
+        .pipe(self.event('less:done'));
 
     self.log.task('Less', 'render', 'complete');
 }

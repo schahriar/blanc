@@ -9,7 +9,7 @@ var herb = require('herb');
 var argv = require('yargs').argv;
 var herb = require('herb');
 
-var blanc = new (require('../blanc'));
+var blanc = require('../blanc')();
 
 var tasks = {
     init: {

@@ -12,7 +12,7 @@ blanc init && blanc watch
 ```
 **blanc** will then start a development server at an available port between 8080 - 9000 and display the address in the console. This dev sever will have live-reload enabled by default!
 
-You should then have a rapid development server setup at **localhost:8080** (or a higher port if occupied)
+You should then have a rapid development server setup at **localhost:8080** (or a higher port if occupied). You can monitor your development through the **blanc command line interface** packaged with this module:
 
 ![localhost](https://raw.githubusercontent.com/schahriar/blanc/master/e.g.png)
 
@@ -48,10 +48,12 @@ To take advantage of **blanc** you should follow a few rules:
 - The 10th rule is still a mystery!
 
 ## What's new?
+- **Mocha Test Suite**
+- **Better Init Interface**
 - **Improved Command Line Interface**
 - **Time tracker**
-- **Browserify support**
-- **OS Notifications**
+- *Browserify support*
+- *OS Notifications*
 - Jade locals support
 - Much better error handling
 - Auto fixer for config file

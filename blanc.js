@@ -7,11 +7,14 @@ var path = require('path');
 
 //
 var gulp = require('gulp');
+var watch = require('gulp-watch');
 var connect = require('gulp-connect');
 var portscanner = require('portscanner');
+var stream = require('event-stream');
 //
 
 var herb = require('herb');
+var async = require('async');
 
 var blanc = function(callback) {
     this.config = {
@@ -33,7 +36,10 @@ var blanc = function(callback) {
 
 util.inherits(blanc, eventEmmiter);
 
-blanc.prototype.init = function(fullPath, dest) {
+blanc.prototype.init = function(fullPath, dest, silent, callback) {
+    var self = this;
+    var silentLog = (!silent)?self.log:{ clear: new Function, line: new Function };
+
     if (!fullPath) throw Error('A PATH IS REQUIRED FOR INIT');
     var template = path.resolve(__dirname, './template');
 
@@ -41,54 +47,120 @@ blanc.prototype.init = function(fullPath, dest) {
         this.config.dest = dest;
         dest = path.resolve(fullPath, dest);
     }
-    fs.writeFileSync(path.resolve(fullPath, '.blanc'), JSON.stringify(this.config, null, 2));
 
-    fs.readdir(fullPath, function(error, files) {
-        if (error) throw error;
+    silentLog.clear(0,0);
 
-        // Add exception for hidden files & Node related files/directories
-        _.remove(files, function(n) {
-            if (n.toLowerCase() === 'package.json') return true;
-            if (n.toLowerCase() === 'node_modules') return true;
-            return n.substring(0, 1) === '.'
-        })
-        if (files.length !== 0) {
-            herb.log(herb.cyan("REMOVE"), herb.yellow(files.join(', ')))
-            herb.log(herb.red("THIS DIRECTORY MUST BE EMPTY!"));
-        } else {
-            fs.copy(template, fullPath, function(error) {
-                if (error) return console.error(error);
-                herb.log(herb.yellow("SUCCESSFULLY INITIALIZED"));
-            })
+    var nCount = 1;
+
+    function progress(color, text) {
+        return function(callback) {
+            if(silent) return (callback)?callback():false;
+            silentLog.line('last', herb.blue(' blanc | ') + herb[color](text));
+            if(callback) setTimeout(callback, 1000);
         }
-    })
+    }
+
+    function progressLog() {
+        var args = _.toArray(arguments);
+        var time = args.shift();
+        var callback = args.pop();
+        if(silent) return (callback)?callback():false;
+        setTimeout(function(){
+            console.log(args.join(' '));
+            callback();
+        }, time * nCount);
+        nCount++;
+    }
+
+    async.waterfall([
+        progress('magenta', 'Initializing directory ...'),
+        progress('yellow', 'Creating new .blanc file ...'),
+        function(callback){
+            if(!silent) herb.log('.blanc set to:').humanify(self.config);
+            fs.writeFile(path.resolve(fullPath, '.blanc'), JSON.stringify(self.config, null, 2), callback);
+        },
+        progress('green', '.blanc file created ...'),
+        function(callback){
+            progress('yellow', 'Checking directory ...')(function(){
+                fs.readdir(fullPath, callback);
+            });
+        },
+        function(files, callback){
+            // Add exception for hidden files & Node related files/directories
+            async.filter(files, function(n, callback){
+                var keep = true;
+                if (n.toLowerCase() === 'package.json') keep = !keep;
+                if (n.toLowerCase() === 'node_modules') keep = !keep;
+                if (n.substring(0, 1) === '.') keep = !keep;
+                progressLog(1500/files.length, (keep)?herb.red('NOPE'):herb.green('OK'), (keep)?herb.yellow(n):herb.dim(n), function(){
+                    callback(keep);
+                });
+            }, function(files){
+                if (files.length !== 0) {
+                    herb.marker({ style: 'dim' }).line('-');
+                    callback(
+                        herb.red("THIS DIRECTORY MUST BE EMPTY!\n")
+                        +
+                        herb.cyan("REMOVE ") + herb.yellow(files.join(', '))
+                    );
+                } else {
+                    callback();
+                }
+            });
+        },
+        progress('green', 'Directory is OK! Copying files ...'),
+        function(callback) {
+            fs.copy(template, fullPath, callback);
+        }
+    ], function (error, result) {
+           if(error) {
+               if(!silent) console.error(error);
+               progress('red', 'INIT FAILED!')();
+               if(callback) callback(error);
+           }
+           else {
+               if(!silent) herb.log('RUN', herb.magenta('blanc watch'), 'to start a rapid development server!');
+               progress('yellow', 'SUCCESSFULLY INITIALIZED!')();
+               if(callback) callback(null, self.config.createdAt);
+           }
+    });
 }
 
-blanc.prototype.watch = function(directory, silent) {
+blanc.prototype.watch = function(directory, silent, callback) {
     var self = this;
 
+    if (silent !== undefined) self.log.silent(silent);
     self.log.header('ready!');
 
+    /* This section is all thanks to forced logs by gulp-connect */
     // Replace console log
-    console.log = console.warn = console.error = function() {
+    if(silent !== 'force') console.log = console.warn = console.error = function() {
         self.log.addLog.apply(self.log, arguments)
     };
+    else {
+        // This will prevent gulp-connect logs for Mocha
+        console.log = function() {
+            if (/\[.*?\]/.exec(arguments[0])) return false;
+            else console.warn.apply(null, arguments);
+        };
+    }
+    // --------------------------------------------------------- //
 
-    if (!!silent) self.log.silent();
     if (!directory) directory = process.cwd();
 
     // Checks if .blanc file exists
     if(!fs.existsSync(path.resolve(directory, '.blanc'))) {
-        this.log.error('.blanc');
+        self.log.error('.blanc');
         return herb.error('.blanc file does not exists! Run', herb.magenta('blanc fix or blanc init'));
     }
 
     try {
-        this.config = JSON.parse(fs.readFileSync(path.resolve(directory, '.blanc'), 'utf8')) || this.config;
-        this.dest = path.resolve(directory, this.config.dest || '');
-        this.directory = directory;
+        self.config = JSON.parse(fs.readFileSync(path.resolve(directory, '.blanc'), 'utf8')) || self.config;
+        self.dest = path.resolve(directory, self.config.dest || '');
+        self.directory = directory;
     }catch(e) {
-        this.log.error('.blanc');
+        callback('.blanc issue')
+        self.log.error('.blanc');
         return herb.error('.blanc file seems to be corrupted! Run', herb.magenta('blanc fix'));
     }
 
@@ -102,9 +174,11 @@ blanc.prototype.watch = function(directory, silent) {
             livereload: true,
             port: port
         });
+        // Callback after port is determined
+        if(callback) callback(null, self.port);
     })
 
-    this.setFooter();
+    self.setFooter();
     // Log time spent
     setInterval(function(){
         // Defines a minimum 5 min save time to stop the counter
@@ -117,16 +191,17 @@ blanc.prototype.watch = function(directory, silent) {
         }
     }, 60000);
 
-    this.autoOverwatch();
+    self.autoOverwatch();
 }
 
 // Automatically overwatches default paths
 /// This function is separated from WATCH mainly for API purposes
-blanc.prototype.autoOverwatch = function() {
+blanc.prototype.autoOverwatch = function(callback) {
     this.overwatch(['./source/*/*', './source/*', './markdown/*/*.md', './markdown/*.md'], 'jadify');
     this.overwatch(['./stylesheets/*.less', './stylesheets/*/*.less'], 'lessify');
     this.overwatch(['./resources/*', './resources/*/*'], 'resourcify');
     this.overwatch(['./javascript/*.js', './javascript/*/*.js'], 'browserify');
+    if(callback) callback(null);
 }
 
 /*
@@ -137,7 +212,7 @@ blanc.prototype.overwatch = function(source, func) {
     var self = this;
 
     this[func]();
-    gulp.watch(self.resolve(source), function(){
+    watch(self.resolve(source), function(){
         self.idle = 0;
         self[func].apply(self, arguments);
     });
@@ -147,19 +222,36 @@ blanc.prototype.overwatch = function(source, func) {
 // Resolves an Array of paths to the project directory
 */
 blanc.prototype.resolve = function(paths) {
+    var self = this;
     var paths = _.toArray(paths);
     var resolved = [];
     _.each(paths, function(PATH) {
         if (PATH.substring(0, 1) == '!') {
-            resolved.push('!' + path.resolve(this.directory || '', PATH.substring(1)));
+            resolved.push('!' + path.resolve(self.directory || '', PATH.substring(1)));
         } else {
-            resolved.push(path.resolve(this.directory || '', PATH));
+            resolved.push(path.resolve(self.directory || '', PATH));
         }
     })
     return resolved;
 }
 // Reloads development server (livereload)
 blanc.prototype.reload = connect.reload;
+blanc.prototype.event = function(ev) {
+    var self = this;
+    var args = _.toArray(arguments);
+    if((ev) && (ev.substring(0,1) === '!')) {
+        args[0] = ev.substring(1);
+        setTimeout(function(){
+            self.emit.apply(self, args);
+        }, 500)
+    }
+    return stream.map(function(data, callback) {
+        if(ev) process.nextTick(function(){
+            self.emit.apply(self, args);
+        })
+        return callback(null, data);
+    })
+}
 
 //// MODULES ////
 blanc.prototype.jadify = require('./modules/jadify');
@@ -168,4 +260,6 @@ blanc.prototype.resourcify = require('./modules/resourcify');
 blanc.prototype.browserify = require('./modules/browserify');
 //// ------ ////
 
-module.exports = blanc;
+module.exports = function(){
+    return new blanc();
+};

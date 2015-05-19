@@ -46,6 +46,8 @@ var SuperLog = function(title, prefix, silent) {
 util.inherits(SuperLog, eventEmmiter);
 
 SuperLog.prototype.header = function() {
+    if (this.hush === 'force') return false;
+    
     var text = _.toArray(arguments).join(' ');
     culinary.position(0, 0).clearScreen();
     herb.marker({
@@ -63,6 +65,8 @@ SuperLog.prototype.header = function() {
 }
 
 SuperLog.prototype.task = function(plugin, task, status) {
+    if (this.hush === 'force') return false;
+
     if (this.hasError) this.solve();
 
     var type = {
@@ -85,6 +89,8 @@ SuperLog.prototype.task = function(plugin, task, status) {
 }
 
 SuperLog.prototype.error = function(plugin, code) {
+    if (this.hush === 'force') return false;
+
     if (this.hasError) this.solve();
 
     culinary.save().position(0, 2).eraseLine();
@@ -94,6 +100,8 @@ SuperLog.prototype.error = function(plugin, code) {
 }
 
 SuperLog.prototype.plumb = function(message) {
+    if (this.hush === 'force') return false;
+
     this.hasError = true;
     culinary.position(0, 4);
     herb.marker({
@@ -107,6 +115,8 @@ SuperLog.prototype.plumb = function(message) {
 }
 
 SuperLog.prototype.addLog = function() {
+    if (this.hush === 'force') return false;
+
     var startAt = 4;
     var available = screen.height - (this.padding.bottom+startAt);
     var type = {
@@ -152,11 +162,19 @@ SuperLog.prototype.notify = function(message, type) {
     }, (type === 'ERROR') ? 6000 : 3500);
 }
 
-SuperLog.prototype.silent = function(toggle) {
-    this.hush = toggle || true;
+SuperLog.prototype.silent = function(type) {
+    this.hush = type || true;
+}
+
+SuperLog.prototype.clear = function(x, y) {
+    if (this.hush === 'force') return false;
+
+    culinary.clearScreen().position(x || 0, y || 0);
 }
 
 SuperLog.prototype.line = function() {
+    if (this.hush === 'force') return false;
+
     var args = _.toArray(arguments);
     var line = args.shift();
     if (line.substring(0, 4) === 'last') {
@@ -165,6 +183,12 @@ SuperLog.prototype.line = function() {
             this.padding.bottom = parseInt(line.split('-')[1]) + 1;
             line = screen.height - parseInt(line.split('-')[1]);
         } else line = screen.height + 1;
+    }else if (line.substring(0, 5) === 'first') {
+        if(this.padding.top < 1) this.padding.top = 1;
+        if (line.substring(5, 6) === '+') {
+            this.padding.top = parseInt(line.split('-')[1]) + 1;
+            line = parseInt(line.split('-')[1]);
+        } else line = 1;
     }
     culinary.save().position(0, line).eraseLine();
     culinary.write(args.join(' '));

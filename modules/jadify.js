@@ -26,11 +26,13 @@ module.exports = function() {
             self.log.plumb(error.message);
             this.emit('end');
         }))
+        .pipe(self.event('jade:start'))
         .pipe(jade({
             locals: readLocals(self)
         }))
         .pipe(gulp.dest(self.dest))
-        .pipe(self.reload());
+        .pipe(self.reload())
+        .pipe(self.event('jade:done'));
 
     self.log.task('Jade', 'render', 'complete');
 }

@@ -1,10 +1,10 @@
 {
   "name": "blanc",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "a rapid development static site generator",
   "main": "blanc.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "preferGlobal": true,
   "bin": {
@@ -29,8 +29,10 @@
   "homepage": "https://github.com/schahriar/blanc",
   "dependencies": {
     "ansi-regex": "^1.1.1",
+    "async": "^0.9.0",
     "browserify": "^10.2.0",
     "culinary": "^1.1.6",
+    "event-stream": "^3.3.1",
     "fs-extra": "^0.18.2",
     "gulp": "^3.8.11",
     "gulp-autoprefixer": "^2.3.0",
@@ -40,6 +42,7 @@
     "gulp-plumber": "^1.0.0",
     "gulp-sourcemaps": "^1.5.2",
     "gulp-uglify": "^1.2.0",
+    "gulp-watch": "^4.2.4",
     "herb": "^2.2.6",
     "lodash": "^3.8.0",
     "marked": "^0.3.3",
@@ -49,5 +52,10 @@
     "vinyl-source-stream": "^1.1.0",
     "watchify": "^3.2.1",
     "yargs": "^3.9.0"
+  },
+  "devDependencies": {
+    "chai": "^2.3.0",
+    "mocha": "^2.2.5",
+    "request": "^2.55.0"
   }
 }
