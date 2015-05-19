@@ -71,7 +71,7 @@ describe('Test Suite', function() {
     })
     describe('Watch Tests', function() {
         it('should successfully begin watching for changes', function(done) {
-            blanc.watch(config.path, 'force', function(error, port) {
+            blanc.watch(config.path, 'force', false, function(error, port) {
                 config.port = port;
                 done(error);
             });

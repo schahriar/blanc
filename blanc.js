@@ -11,6 +11,7 @@ var watch = require('gulp-watch');
 var connect = require('gulp-connect');
 var portscanner = require('portscanner');
 var stream = require('event-stream');
+var launch = require('open');
 //
 
 var herb = require('herb');
@@ -126,7 +127,7 @@ blanc.prototype.init = function(fullPath, dest, silent, callback) {
     });
 }
 
-blanc.prototype.watch = function(directory, silent, callback) {
+blanc.prototype.watch = function(directory, silent, open, callback) {
     var self = this;
 
     if (silent !== undefined) self.log.silent(silent);
@@ -174,6 +175,7 @@ blanc.prototype.watch = function(directory, silent, callback) {
             livereload: true,
             port: port
         });
+        if(open) launch('http://localhost:'+port);
         // Callback after port is determined
         if(callback) callback(null, self.port);
     })

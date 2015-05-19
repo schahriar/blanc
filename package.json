@@ -1,6 +1,6 @@
 {
   "name": "blanc",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "a rapid development static site generator",
   "main": "blanc.js",
   "scripts": {
@@ -47,6 +47,7 @@
     "lodash": "^3.8.0",
     "marked": "^0.3.3",
     "node-notifier": "^4.2.1",
+    "open": "0.0.5",
     "portscanner": "^1.0.0",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0",

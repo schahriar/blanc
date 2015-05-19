@@ -32,6 +32,8 @@ By default the watch command works in the **current directory** and **creates no
 blanc watch ./mysite
 // Silent notifications
 blanc watch --silent
+// Launch in browser
+blanc watch --open
 ```
 
 ## 10 Simple Rules
@@ -48,6 +50,7 @@ To take advantage of **blanc** you should follow a few rules:
 - The 10th rule is still a mystery!
 
 ## What's new?
+- **Launch in Browser**
 - **Mocha Test Suite**
 - **Better Init Interface**
 - **Improved Command Line Interface**
