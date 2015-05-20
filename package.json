@@ -1,6 +1,6 @@
 {
   "name": "blanc",
-  "version": "0.2.2",
+  "version": "1.0.0",
   "description": "a rapid development static site generator",
   "main": "blanc.js",
   "scripts": {
@@ -29,6 +29,7 @@
   "homepage": "https://github.com/schahriar/blanc",
   "dependencies": {
     "ansi-regex": "^1.1.1",
+    "archiver": "^0.14.4",
     "async": "^0.9.0",
     "browserify": "^10.2.0",
     "culinary": "^1.1.6",
@@ -40,6 +41,7 @@
     "gulp-jade": "^1.0.0",
     "gulp-less": "^3.0.3",
     "gulp-plumber": "^1.0.0",
+    "gulp-size": "^1.2.1",
     "gulp-sourcemaps": "^1.5.2",
     "gulp-uglify": "^1.2.0",
     "gulp-watch": "^4.2.4",

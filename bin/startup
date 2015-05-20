@@ -22,6 +22,11 @@ var tasks = {
         category: "development",
         FUNC: require("./tasks/watch")
     },
+    build: {
+        description: "BUILDING|BUILDS| SITE",
+        category: "build tools",
+        FUNC: require("./tasks/build")
+    },
     fix: {
         description: "FIXING|FIXES| BLANC CONFIG",
         category: "development",

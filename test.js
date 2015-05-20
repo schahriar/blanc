@@ -46,6 +46,7 @@ else fs.emptyDirSync(config.path);
 
 describe('Test Suite', function() {
     describe('Init Tests', function() {
+        this.timeout(4000);
         it('should successfully init a given path', function(done) {
             blanc.init(config.path, config.dest, true, function(error, time) {
                 config.time = time;

@@ -44,7 +44,7 @@ module.exports = function() {
         this.emit('end');
     })
     bundle.on('time', function(time) {
-        self.event('!browserify:done', time);
+        self.event('!browserify:done');
         self.log.task('Browserify', 'render took', time + 'ms');
     });
 

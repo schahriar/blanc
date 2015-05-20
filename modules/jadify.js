@@ -1,6 +1,5 @@
 var fs = require('fs-extra');
 var path = require('path');
-var path = require('path');
 var gulp = require('gulp');
 var jade = require('gulp-jade');
 var plumber = require('gulp-plumber');

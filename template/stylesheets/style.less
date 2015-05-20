@@ -2,7 +2,29 @@ body {
     background: #fafafa;
     color: #222;
 
-    font-size: 16px;
+    font-size: 14px;
     font-family: monospace;
-    margin: 4em 5em;
+    margin: 2em 6em;
+}
+
+h1 {
+    border-bottom: 3px solid #222;
+    padding-bottom: 4px;
+    display: inline-block;
+}
+
+ol {
+    margin: 1.4em 0 20px 1.2em;
+    & li {
+        letter-spacing: -0.03em;
+        padding: 0.5em 0;
+        color: #222;
+        transition: all 0.3s ease;
+        &:hover {
+            transform: scale(1.05);
+        }
+    }
+    &:hover li:not(:hover) {
+        opacity: 0.8;
+    }
 }

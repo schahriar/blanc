@@ -27,6 +27,7 @@ var SuperLog = function(title, prefix, silent) {
     this.padding = { top: 3, bottom: 0 };
     this.name = (prefix) ? prefix + ' ' + title : title;
     this.hush = !!silent;
+    this.nCount = 0;
     this.templates = {
         header: herb.template('write', 'blue', 'white', 'dim', 'magenta', 'white', 'bold'),
         error: herb.template('write', 'yellow', 'dim', 'bgRed', 'red', 'bold')
@@ -47,7 +48,7 @@ util.inherits(SuperLog, eventEmmiter);
 
 SuperLog.prototype.header = function() {
     if (this.hush === 'force') return false;
-    
+
     var text = _.toArray(arguments).join(' ');
     culinary.position(0, 0).clearScreen();
     herb.marker({
@@ -193,6 +194,29 @@ SuperLog.prototype.line = function() {
     culinary.save().position(0, line).eraseLine();
     culinary.write(args.join(' '));
     culinary.restore();
+}
+
+SuperLog.prototype.progress = function(color, text) {
+    var self = this;
+    return function(callback) {
+        if(self.hush) return (callback)?callback():false;
+
+        self.line('last', herb.blue(' '+ self.title +' | ') + herb[color](text));
+        if(callback) setTimeout(callback, 1000);
+    }
+}
+
+SuperLog.prototype.progressLog = function() {
+    var self = this;
+    var args = _.toArray(arguments);
+    var time = args.shift();
+    var callback = args.pop();
+    if(self.hush) return (callback)?callback():false;
+    setTimeout(function(){
+        console.log(args.join(' '));
+        callback();
+    }, time * self.nCount);
+    self.nCount++;
 }
 
 module.exports = function(title, prefix, silent) {
