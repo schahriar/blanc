@@ -31,6 +31,7 @@ blanc init <site-folder> <build-destination>
 blanc init ./ build
 ```
 
+-----------
 ### Watch
 ```jade
 blanc watch <site-folder>
@@ -45,6 +46,8 @@ blanc watch <site-folder>
 ```jade
 blanc watch
 ```
+
+----------
 
 ### Build
 ```jade
