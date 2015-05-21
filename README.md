@@ -67,16 +67,17 @@ blanc build ./build.zip --zip
 
 ## 10 Simple Rules
 To take advantage of **blanc** you should follow a few rules:
-- All Jade files must be stored in the **/source** directory and will represent a specific page rendered in the root of destination folder. You can create another level of directory within this directory (e.g. *./docs/setup.jade -> example.com/docs/setup.html*)
-- All Jade locals must be stored in **/source/_locals.json**.
-- All LESS files must be stored in the **/stylesheets** directory.
-- All LESS includes which should **only** be rendered inline must be stored in the **/stylesheets/includes** directory.
-- All Markdown files must be stored in the **/markdown** directory.
-- All Markdown files must be exclusively included through Jade files.
-- All Javascript files must be stored in the **/javascript** folder.
-- All *Browserify* includes must originate from **/javascript/master.js**.
-- All Resources (images, etc.) that are packaged with the build must be stored in the **/resources** directory. Resources can be nested to up to one level.
-- The 10th rule is still a mystery!
+1. Store all Jade files in **/source** directory. Each file represents a specific page rendered in the root of destination folder. You can create another level of directory within this directory <small>(e.g. ./docs/setup.jade -> example.com/docs/setup.html)</small>
+2. Store all Jade locals in **/source/_locals.json**. You can then include these locals/variable in your Jade files.
+3. Store all Less files in the **/stylesheets** directory.
+4. Store all Less includes in the **/stylesheets/includes** directory.
+5. Store all Markdown files in the **/markdown** directory.
+6. Include Markdown files in Jade source when needed. <small>e.g. include:markdown ../markdown/title.md</small>
+7. Store all Javascript files in the **/javascript** directory.
+8. Include all Browserify modules in **/javascript/master.js**.
+9. Include **bundle.js** from **/resources/bundle.js** in your Jade layout.
+10. Store all additional resources (images, videos, etc.) in the **/resources** folder.
+**Create great things!**
 
 ## What's new?
 - **Events**

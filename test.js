@@ -162,7 +162,7 @@ describe('Test Suite', function() {
         it('should render js files', function(done) {
             fs.writeFileSync(config.js, 'var global = "#mocha"; console.log(global);', 'utf8');
             blanc.on('browserify:done', _.once(function() {
-                request.get('http://localhost:'+config.port+'/js/bundle.js', function(err, res, body) {
+                request.get('http://localhost:'+config.port+'/resources/bundle.js', function(err, res, body) {
                     expect(body).to.contain("#mocha");
                     done();
                 });
@@ -172,14 +172,14 @@ describe('Test Suite', function() {
             fs.writeFileSync(config.require, 'module.exports = "#REQUIRE-MOCHA"', 'utf8');
             fs.writeFileSync(config.js, 'var global = require("./var.js"); console.log(global);', 'utf8');
             blanc.on('browserify:done', _.once(function(time) {
-                request.get('http://localhost:'+config.port+'/js/bundle.js', function(err, res, body) {
+                request.get('http://localhost:'+config.port+'/resources/bundle.js', function(err, res, body) {
                     expect(body).to.contain("#REQUIRE-MOCHA");
                     done();
                 });
             }))
         })
         it('should generate sourcemaps', function(done) {
-            request.get('http://localhost:'+config.port+'/js/bundle.js.map', function(err, res, body) {
+            request.get('http://localhost:'+config.port+'/resources/bundle.js.map', function(err, res, body) {
                 expect(res.statusCode).to.equal(200);
                 done();
             });

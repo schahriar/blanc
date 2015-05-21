@@ -1,6 +1,6 @@
 {
   "name": "blanc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "a rapid development static site generator",
   "main": "blanc.js",
   "scripts": {
